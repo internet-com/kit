@@ -1,0 +1,114 @@
+Validate Package Design
+An important aspect of package oriented design is the ability to validate the design of packages. This is possible because of the guidelines that are associated with a package based on its location inside the project. There are seven validation steps that will help you identify design problems.
+
+Validate the location of a package.
+Kit
+Packages that provide foundational support for the different Application projects that exist.
+logging, configuration or web functionality.
+cmd/
+Packages that provide support for a specific program that is being built.
+startup, shutdown and configuration.
+internal/
+Packages that provide support for the different programs the project owns.
+CRUD, services or business logic.
+internal/platform/
+Packages that provide internal foundational support for the project..
+database, authentication or marshaling.
+Validate the dependency choices.
+All
+Validate the cost/benefit of each dependency.
+Question imports for the sake of sharing existing types.
+Question imports to others packages at the same level.
+If a package wants to import another package at the same level:
+Question the current design choices of these packages.
+If reasonable, move the package inside the source tree for the package that wants to import it.
+Use the source tree to show the dependency relationships.
+internal/
+Packages from these locations CAN’T be imported:
+cmd/
+internal/platform/
+Packages from these locations CAN’T be imported:
+cmd/
+internal/
+Validate the policies being imposed.
+Kit, internal/platform/
+NOT allowed to set policy about any application concerns.
+NOT allowed to log, but access to trace information must be decoupled.
+Configuration and runtime changes must be decoupled.
+Retrieving metric and telemetry values must be decoupled.
+cmd/, internal/
+Allowed to set policy about any application concerns.
+Allowed to log and handle configuration natively.
+Validate how data is accepted/returned.
+All
+Validate the consistent use of value/pointer semantics for a given type.
+When using an interface type to accept a value, the focus must be on the behavior that is required and not the value itself.
+If behavior is not required, use a concrete type.
+When reasonable, use an existing type before declaring a new one.
+Question types from dependencies that leak into the exported API.
+An existing type may no longer be reasonable to use.
+Validate how errors are handled.
+All
+Handling an error means:
+The error has been logged.
+The application is back to 100% integrity.
+The current error is not reported any longer.
+Kit
+NOT allowed to panic an application.
+NOT allowed to wrap errors.
+Return only root cause error values.
+cmd/
+Allowed to panic an application.
+Wrap errors with context if not being handled.
+Majority of handling errors happen here.
+internal/
+NOT allowed to panic an application.
+Wrap errors with context if not being handled.
+Minority of handling errors happen here.
+internal/platform/
+NOT allowed to panic an application.
+NOT allowed to wrap errors.
+Return only root cause error values.
+Validate testing.
+cmd/
+Allowed to use 3rd party testing packages.
+Can have a test folder for tests.
+Focus more on integration than unit testing.
+kit/, internal/, internal/platform/
+Stick to the testing package in go.
+Test files belong inside the package.
+Focus more on unit than integration testing.
+Validate recovering panics.
+cmd/
+Can recover any panic.
+Only if system can be returned to 100% integrity.
+kit/, internal/, internal/platform/
+Can not recover from panics unless:
+Goroutine is owned by the package.
+Can provide an event to the app about the panic.
+Quick Example
+Here is a quick example of how we can review the Application project to understand how the project is put together and validate the dependency choices for each package.
+
+cmd/
+This Application project builds two programs: servi and servid.
+servid is a web service.
+servi is a cli tool.
+None of the packages inside of servid/ can import any packages from inside servi/.
+The routes package CAN’T import the cmdupdate package.
+The routes package does import the handlers package.
+internal/
+This project has four root level internal packages.
+attachments, locations, orders and registrations.
+This project has three internal/platform/ packages.
+crypto, mongo and sg
+The four root level packages are not allowed to import each other.
+They are at the same level.
+attachments can’t import any other internal/ only package.
+The orders package has three packages declared inside of it.
+customers, items and tags.
+From within the internal/ folder, only orders can import these packages.
+These three packages can’t import each other.
+Any package inside of the internal/ folder can import from internal/platform/.
+The attachments package can import mongo.
+The internal/platform/ packages can import each other.
+The crypto can import the mongo.
